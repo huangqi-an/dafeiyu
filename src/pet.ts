@@ -1,9 +1,11 @@
-import { AnimName, CLICK_POOL, IDLE_POOL, LOOPING, isAnimName } from './anims'
+import { AnimName, CLICK_POOL, FEED_POOL, IDLE_POOL, LOOPING, isAnimName } from './anims'
 import { BUILTIN_LINES, DEFAULTS } from './config'
 import type { DafeiyuOptions, PetEndpoints } from './config'
+import { addAffinity, FRIEND_LINES, levelOf, loadAffinity } from './affinity'
 import { Bubble } from './bubble'
 import { ChatPanel, streamChat } from './chat'
 import type { ChatMessage } from './chat'
+import { PetMenu } from './menu'
 import { attachDrag, startFlight } from './physics'
 import { Player } from './player'
 
@@ -20,8 +22,10 @@ const COMBO_WINDOW_MS = 3000
 const COMBO_ANGRY = 5
 const THROW_SPEED = 0.5 // px/ms，低于此按「放下」处理
 const RARE_CHANCE = 0.02
+const RARE_CHANCE_FRIEND = 0.05 // 好感 ≥100（老朋友）后的彩蛋概率
 const WANDER_CHANCE = 0.08
 const BUBBLE_MS = 10000
+const LONG_PRESS_MS = 800 // 按住不动这么久 = 摸头
 const CHAT_HISTORY_KEY = 'dafeiyu:chat-history'
 const CHAT_MAX_ITEMS = 10 // 5 轮问答，随请求发给后端
 /** 素材画幅 16:9（640x360），视口裁剪按此估算；首帧后用实测值替换 */
@@ -41,7 +45,7 @@ export class Pet {
   /** 单例：重复 mount 时先销毁上一个 */
   static current: Pet | undefined
 
-  private opts: Required<Pick<DafeiyuOptions, 'assetBase' | 'size' | 'zIndex' | 'whisperIntervalSec' | 'enabledOnMobile'>> &
+  private opts: Required<Pick<DafeiyuOptions, 'assetBase' | 'size' | 'zIndex' | 'whisperIntervalSec' | 'enabledOnMobile' | 'pageContext'>> &
     DafeiyuOptions
   private extraLines: string[]
   private endpoints: PetEndpoints | undefined
@@ -75,6 +79,9 @@ export class Pet {
   private chatOpen = false
   private chatHistory: ChatMessage[] = []
   private chatAbort: AbortController | null = null
+  private menu: PetMenu | null = null
+  private longPressTimer = 0
+  private justPetted = false
 
   private onActivity = (): void => {
     this.lastActivity = Date.now()
@@ -131,6 +138,30 @@ export class Pet {
         this.chatOpen ? this.closeChat() : this.openChat()
       )
     }
+
+    // 右键菜单（好感度/睡眠/聊天状态在 open() 时现取）
+    this.menu = new PetMenu(this.shadow, this.host, {
+      onSay: () => this.forceSay(),
+      onFeed: () => this.feed(),
+      onToggleSleep: () => this.toggleSleep(),
+      onResetPos: () => this.resetPos(),
+      onChat: () => (this.chatOpen ? this.closeChat() : this.openChat())
+    })
+    this.video.addEventListener('contextmenu', (e) => {
+      e.preventDefault()
+      this.openMenu()
+    })
+
+    // 长按摸头：按住不动 800ms 触发；移动（变拖拽）或抬起即取消
+    this.video.addEventListener('pointerdown', () => {
+      this.cancelLongPress()
+      this.longPressTimer = window.setTimeout(() => this.petting(), LONG_PRESS_MS)
+    })
+    this.video.addEventListener('pointerup', () => this.cancelLongPress())
+    this.video.addEventListener('pointercancel', () => this.cancelLongPress())
+    this.video.addEventListener('pointermove', (e) => {
+      if (e.buttons && this.longPressTimer) this.cancelLongPress()
+    })
 
     document.addEventListener('pointerdown', this.onActivity, { passive: true, capture: true })
     document.addEventListener('keydown', this.onActivity, { passive: true, capture: true })
@@ -287,8 +318,9 @@ export class Pet {
 
   private pickNext(): void {
     if (this.dead || this.reduced || this.state !== 'idle') return
+    const rare = loadAffinity() >= 100 ? RARE_CHANCE_FRIEND : RARE_CHANCE
     const r = Math.random()
-    if (r < RARE_CHANCE && !this.player.unavailable.has('rare-whale')) {
+    if (r < rare && !this.player.unavailable.has('rare-whale')) {
       this.runOnce('rare-whale', 'react')
       return
     }
@@ -433,9 +465,15 @@ export class Pet {
     const url = this.endpoints?.whisper
     if (!url) return null
     try {
+      // 页面感知：把当前页标题/路径带给后端，AI 能就着访客正在看的内容说话
+      const target = new URL(url, location.href)
+      if (this.opts.pageContext !== false) {
+        target.searchParams.set('title', document.title.slice(0, 60))
+        target.searchParams.set('path', location.pathname.slice(0, 120))
+      }
       const ctrl = new AbortController()
       const timer = window.setTimeout(() => ctrl.abort(), 8000)
-      const res = await fetch(url, { signal: ctrl.signal })
+      const res = await fetch(target.href, { signal: ctrl.signal })
       window.clearTimeout(timer)
       if (!res.ok) return null
       const data = await res.json()
@@ -450,7 +488,8 @@ export class Pet {
   }
 
   private pickLine(): string | null {
-    const pool = BUILTIN_LINES.concat(this.extraLines)
+    let pool = BUILTIN_LINES.concat(this.extraLines)
+    if (loadAffinity() >= 300) pool = pool.concat(FRIEND_LINES) // 挚友专属台词
     if (!pool.length) return null
     let line = pool[Math.floor(Math.random() * pool.length)]
     if (pool.length > 1) {
@@ -531,6 +570,11 @@ export class Pet {
     this.lastActivity = Date.now()
     this.started = true
     if (this.dead) return
+    if (this.justPetted) {
+      // 刚摸完头松手的那一下不是点击
+      this.justPetted = false
+      return
+    }
     if (this.chatOpen) return // 聊天中，点击不打断对话
     if (this.state === 'sleep') {
       this.wake()
@@ -641,6 +685,82 @@ export class Pet {
     }
   }
 
+  // ── 互动（右键菜单 / 手势入口）──────────────────────────────
+
+  private openMenu(): void {
+    if (this.dead || !this.menu) return
+    const n = loadAffinity()
+    this.menu.open(n, levelOf(n).name, this.state === 'sleep', !!this.endpoints?.chat)
+  }
+
+  private cancelLongPress(): void {
+    if (this.longPressTimer) {
+      window.clearTimeout(this.longPressTimer)
+      this.longPressTimer = 0
+    }
+  }
+
+  /** 摸头：长按触发，好感 +1；好感 ≥30（熟悉）后有概率冒泡回应 */
+  private petting(): void {
+    this.cancelLongPress()
+    if (this.dead || this.chatOpen) return
+    this.justPetted = true
+    this.lastActivity = Date.now()
+    const n = addAffinity(1)
+    this.bubble.hide()
+    if (n >= 30 && Math.random() < 0.34) {
+      const pets = ['咕噜咕噜…好舒服', '再摸会儿也行', '摸头杀！']
+      this.bubble.say(pets[Math.floor(Math.random() * pets.length)], 5000)
+    }
+    void this.runOnce('pet-scratch', 'react')
+  }
+
+  /** 喂食：好感 +2，随机吃一段；抽到「偷吃被抓住」配一句嘴硬台词 */
+  feed(): void {
+    if (this.dead) return
+    this.lastActivity = Date.now()
+    addAffinity(2)
+    this.bubble.hide()
+    const pool = FEED_POOL.filter((a) => !this.player.unavailable.has(a))
+    if (!pool.length) return
+    const name = pool[Math.floor(Math.random() * pool.length)]
+    if (name === 'eat-caught') this.bubble.say('不、不是我偷吃的！', 5000)
+    this.state = 'react'
+    void this.runOnce(name, 'react')
+  }
+
+  /** 菜单里的睡觉/叫醒开关 */
+  toggleSleep(): void {
+    if (this.dead) return
+    this.lastActivity = Date.now()
+    if (this.state === 'sleep') {
+      this.wake()
+    } else {
+      this.clearTimers()
+      this.state = 'sleep'
+      this.bump()
+      this.bubble.hide()
+      void this.player.play('sleep-snooze', true)
+    }
+  }
+
+  /** 回到默认角落（右下），并清掉记住的位置；进行中的抛掷也要停 */
+  resetPos(): void {
+    if (this.dead) return
+    this.flightCancel?.()
+    this.flightCancel = null
+    if (this.state === 'fly') {
+      this.state = 'idle'
+      this.scheduleIdle(rand(300, 900))
+    }
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    this.x = vw - this.opts.size - MARGIN
+    this.y = vh - this.hPlaceholder() - MARGIN
+    this.applyTransform()
+    this.savePos()
+  }
+
   // ── 可见性 ────────────────────────────────────────────────────
 
   private suspend(): void {
@@ -703,9 +823,11 @@ export class Pet {
     }
     this.dead = true
     this.clearTimers()
+    this.cancelLongPress()
     this.flightCancel?.()
     this.chatAbort?.abort()
     this.chatAbort = null
+    this.menu?.destroy()
     this.detachDrag?.()
     document.removeEventListener('pointerdown', this.onActivity, { capture: true } as EventListenerOptions)
     document.removeEventListener('keydown', this.onActivity, { capture: true } as EventListenerOptions)

@@ -32,6 +32,10 @@ MAP=(
   "talk-thinking=深度思考碎碎念"
   "walk-crab=螃蟹走路"
   "rare-whale=蓝鲸现世"
+  "pet-scratch=点击回应-挠痒咯咯笑"
+  "eat-rice=吃白饭"
+  "eat-caught=偷吃零食被抓住"
+  "eat-icecream=吃冰淇淋融化"
 )
 
 API="https://api.github.com/repos/PC2005-cloud/dsh-pet/contents/dsh-pet/assets/webm"
@@ -102,6 +106,10 @@ MAP = {
     "talk-thinking": "深度思考碎碎念",
     "walk-crab": "螃蟹走路",
     "rare-whale": "蓝鲸现世",
+    "pet-scratch": "点击回应-挠痒咯咯笑",
+    "eat-rice": "吃白饭",
+    "eat-caught": "偷吃零食被抓住",
+    "eat-icecream": "吃冰淇淋融化",
 }
 zh2ascii = {v: k for k, v in MAP.items()}
 z = zipfile.ZipFile(sys.argv[1])

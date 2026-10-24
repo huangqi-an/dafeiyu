@@ -22,6 +22,8 @@ export interface DafeiyuOptions {
   whisperIntervalSec?: number
   /** 视口 <768px 时是否显示，默认隐藏 */
   enabledOnMobile?: boolean
+  /** whisper 请求是否附带当前页面标题/路径（后端可据此说应景台词），默认开 */
+  pageContext?: boolean
   /** AI 后端地址：配了才有碎碎念拉取和双击聊天面板，失败降级本地台词池 */
   endpoints?: PetEndpoints
 }
@@ -32,7 +34,8 @@ export const DEFAULTS = {
   size: 240,
   zIndex: 9999,
   whisperIntervalSec: 120,
-  enabledOnMobile: false
+  enabledOnMobile: false,
+  pageContext: true
 } as const
 
 /**

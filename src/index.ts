@@ -10,6 +10,8 @@ export interface DafeiyuInstance {
   say(text?: string): void
   /** 立刻播一段动画（语义名见包内 anims.ts / README） */
   play(name: string): void
+  /** 喂食（好感 +2，随机播放吃相动画） */
+  feed(): void
   /** 打开聊天面板（需配置 endpoints.chat，否则 no-op） */
   openChat(): void
   closeChat(): void
@@ -44,6 +46,7 @@ export function mount(options: DafeiyuOptions = {}): DafeiyuInstance {
     },
     say: (text?: string) => ensure().forceSay(text),
     play: (name: string) => ensure().forcePlay(name),
+    feed: () => ensure().feed(),
     openChat: () => ensure().openChat(),
     closeChat: () => ensure().closeChat()
   }

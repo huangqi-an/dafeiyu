@@ -37,14 +37,19 @@ mount({ assetBase: 'https://your-host/pet-assets/' })
 | `lines` | `string[]` | `[]` | 追加台词（内置池之外） |
 | `whisperIntervalSec` | `number` | `120` | 自动说话间隔（秒，±30% 抖动） |
 | `enabledOnMobile` | `boolean` | `false` | 视口 <768px 时是否显示 |
+| `pageContext` | `boolean` | `true` | whisper 是否附带当前页面标题/路径（后端可据此说应景台词） |
 | `endpoints` | `{whisper?,chat?}` | 空 | AI 后端地址；配了才有碎碎念拉取与双击聊天，推荐搭配 [dafeiyu-server](https://github.com/huangqi-an/dafeiyu-server) 自建 |
 
 ## 行为一览
 
-- 待机池随机循环（呼吸/哼歌/张望/打哈欠，深夜哈欠加权），2% 概率触发「蓝鲸现世」彩蛋
+- 待机池随机循环（呼吸/哼歌/张望/打哈欠，深夜哈欠加权），低概率触发「蓝鲸现世」彩蛋（好感 ≥100 概率翻倍）
 - 无操作 5 分钟睡着（点击惊醒）；连点 5 次会生气
 - 可拖拽，松手带惯性抛掷 + 重力 + 边界反弹
-- 定时冒泡说一句（内置约 24 句，可追加；配 `endpoints` 后由 [dafeiyu-server](https://github.com/huangqi-an/dafeiyu-server) 这类后端生成 AI 台词，失败自动降级本地池）
+- **长按 800ms = 摸头**（挠痒咯咯笑），**右键 = 菜单**（说话/喂食/睡觉/回原位/聊天）
+- **好感度**：喂食 +2、摸头 +1、聊天 +2，localStorage 持久化；
+  30 熟悉（摸头会回应）/ 100 老朋友（彩蛋概率翻倍）/ 300 挚友（专属台词）
+- 定时冒泡说一句（内置约 24 句，可追加；配 `endpoints` 后由 [dafeiyu-server](https://github.com/huangqi-an/dafeiyu-server) 这类后端生成 AI 台词，
+  默认带上当前页面标题/路径，AI 能就着你正在看的内容说话；失败自动降级本地池）
 - 双击宠物打开聊天面板（需配 `endpoints.chat`），SSE 流式回复，历史 5 轮存 localStorage
 - `prefers-reduced-motion` 时静止不自动播放动画；页面不可见时暂停一切
 - Safari（macOS WebKit）自动切换 HEVC-alpha 的 `.mov` 素材（需素材目录含同名 mov）

@@ -26,7 +26,8 @@
     "build": "tsup",
     "watch": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "serve": "python3 -m http.server 4322"
+    "serve": "python3 -m http.server 4322",
+    "test:e2e": "node e2e/interaction-test.mjs && node e2e/chat-test.mjs"
   },
   "keywords": [
     "pet",
@@ -41,6 +42,7 @@
     "url": "git+https://github.com/huangqi-an/dafeiyu.git"
   },
   "devDependencies": {
+    "playwright-core": "^1.50.0",
     "tsup": "^8.3.5",
     "typescript": "^5.6.3"
   },

@@ -17,7 +17,11 @@ export const ANIMS = [
   'talk-screen',
   'talk-thinking',
   'walk-crab',
-  'rare-whale'
+  'rare-whale',
+  'pet-scratch',
+  'eat-rice',
+  'eat-caught',
+  'eat-icecream'
 ] as const
 
 export type AnimName = (typeof ANIMS)[number]
@@ -43,3 +47,6 @@ export const IDLE_POOL: AnimName[] = ['idle-breathing', 'idle-humming', 'idle-lo
 
 /** 点击回应池（连击达到阈值换 click-annoyed，在 pet.ts 判定） */
 export const CLICK_POOL: AnimName[] = ['click-happy', 'click-wave']
+
+/** 喂食池（右键菜单 / feed()） */
+export const FEED_POOL: AnimName[] = ['eat-rice', 'eat-caught', 'eat-icecream']
