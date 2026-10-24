@@ -49,7 +49,7 @@ const backToIdle = (timeout = 20000) => page.waitForFunction(
   undefined, { timeout }
 )
 
-// 1. 右键菜单
+// 1. 右键菜单（再右键一次应关闭——开关语义）
 let c = await center()
 await page.mouse.click(c.x, c.y, { button: 'right' })
 await page.waitForTimeout(300)
@@ -59,6 +59,16 @@ check('菜单头部显示好感', st.menuHead.includes('好感 0') && st.menuHea
 check('菜单项齐全（无聊天端点时隐藏聊天）', st.menuBtns.some((b) => b.includes('喂食')) &&
   st.menuBtns.some((b) => b.includes('睡觉')) && st.menuBtns.some((b) => b.includes('回原位')) &&
   !st.menuBtns.some((b) => b.includes('聊天')))
+c = await center()
+await page.mouse.click(c.x, c.y, { button: 'right' })
+await page.waitForTimeout(200)
+st = await page.evaluate(getState)
+check('再次右键关闭菜单', !st.menuOpen)
+c = await center()
+await page.mouse.click(c.x, c.y, { button: 'right' })
+await page.waitForTimeout(200)
+st = await page.evaluate(getState)
+check('第三次右键重新打开', st.menuOpen)
 
 // 2. 喂食 → 吃相动画 + 好感 +2
 await clickMenu('喂食')

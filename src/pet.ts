@@ -150,7 +150,9 @@ export class Pet {
     })
     this.video.addEventListener('contextmenu', (e) => {
       e.preventDefault()
-      this.openMenu()
+      // 已开时再右键 = 关闭（开关语义）
+      if (this.menu?.isOpen) this.menu.close()
+      else this.openMenu()
     })
 
     // 长按摸头：按住不动 800ms 触发；移动（变拖拽）或抬起即取消
