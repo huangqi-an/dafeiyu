@@ -63,6 +63,8 @@ MAP=(
   "talk-thinking=深度思考碎碎念"
   "walk-crab=螃蟹走路"
   "rare-whale=蓝鲸现世"
+  "play-gomoku=下五子棋"
+  "game-rage=玩游戏气急败坏"
   "pet-scratch=点击回应-挠痒咯咯笑"
   "eat-rice=吃白饭"
   "eat-caught=偷吃零食被抓住"
@@ -137,6 +139,8 @@ MAP = {
     "talk-thinking": "深度思考碎碎念",
     "walk-crab": "螃蟹走路",
     "rare-whale": "蓝鲸现世",
+    "play-gomoku": "下五子棋",
+    "game-rage": "玩游戏气急败坏",
     "pet-scratch": "点击回应-挠痒咯咯笑",
     "eat-rice": "吃白饭",
     "eat-caught": "偷吃零食被抓住",

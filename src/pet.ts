@@ -5,6 +5,8 @@ import { addAffinity, FRIEND_LINES, levelOf, loadAffinity } from './affinity'
 import { Bubble } from './bubble'
 import { ChatPanel, streamChat } from './chat'
 import type { ChatMessage } from './chat'
+import { GomokuPanel } from './game'
+import type { GameResult } from './game'
 import { PetMenu } from './menu'
 import { attachDrag, startFlight } from './physics'
 import { Player } from './player'
@@ -82,6 +84,8 @@ export class Pet {
   private chatHistory: ChatMessage[] = []
   private chatAbort: AbortController | null = null
   private menu: PetMenu | null = null
+  private gamePanel: GomokuPanel | null = null
+  private gameOpen = false
   private longPressTimer = 0
   private justPetted = false
 
@@ -143,6 +147,12 @@ export class Pet {
       )
     }
 
+    // 五子棋（本地小游戏，不需要后端）
+    this.gamePanel = new GomokuPanel(this.shadow, {
+      onEnd: (result) => this.onGameEnd(result),
+      onClose: () => this.closeGame()
+    })
+
     // 右键菜单（好感度/睡眠/聊天状态在 open() 时现取）
     this.menu = new PetMenu(this.shadow, this.host, {
       onSay: () => this.forceSay(),
@@ -150,6 +160,7 @@ export class Pet {
       onToggleSleep: () => this.toggleSleep(),
       onResetPos: () => this.resetPos(),
       onChat: () => (this.chatOpen ? this.closeChat() : this.openChat()),
+      onGame: () => (this.gameOpen ? this.closeGame() : this.openGame()),
       onToggleVoice: () => this.setVoice(!this.speech.enabled),
       onCycleVoice: () => this.cycleVoice()
     })
@@ -326,6 +337,7 @@ export class Pet {
 
   private pickNext(): void {
     if (this.dead || this.reduced || this.state !== 'idle') return
+    if (this.gameOpen) return // 下棋中不打扰
     const rare = loadAffinity() >= 100 ? RARE_CHANCE_FRIEND : RARE_CHANCE
     const r = Math.random()
     if (r < rare && !this.player.unavailable.has('rare-whale')) {
@@ -420,7 +432,7 @@ export class Pet {
 
   private checkSleep(): void {
     if (this.dead) return
-    if (this.state === 'idle' && Date.now() - this.lastActivity > SLEEP_AFTER_MS) {
+    if (this.state === 'idle' && !this.gameOpen && Date.now() - this.lastActivity > SLEEP_AFTER_MS) {
       this.state = 'sleep'
       this.bump()
       void this.player.play('sleep-snooze', true)
@@ -445,7 +457,7 @@ export class Pet {
 
   private async tryWhisper(): Promise<void> {
     if (this.dead || this.reduced || !this.started || document.hidden) return
-    if (this.state !== 'idle') return // 睡着/拖拽/说话中都不打扰
+    if (this.state !== 'idle' || this.gameOpen) return // 睡着/下棋/拖拽/说话中都不打扰
     let line = this.pickLine()
     let image: string | undefined
     if (this.endpoints?.whisper) {
@@ -594,6 +606,7 @@ export class Pet {
       return
     }
     if (this.chatOpen) return // 聊天中，点击不打断对话
+    if (this.gameOpen) return // 下棋中不闹脾气
     if (this.state === 'sleep') {
       this.wake()
       return
@@ -620,6 +633,7 @@ export class Pet {
 
   openChat(): void {
     if (this.dead || !this.chatPanel) return
+    if (this.gameOpen) this.closeGame() // 面板都挂在宠物上方，一次只开一个
     if (!this.chatOpen) {
       this.chatOpen = true
       this.clearTimers()
@@ -813,6 +827,50 @@ export class Pet {
     this.savePos()
   }
 
+  // ── 五子棋（本地小游戏）─────────────────────────────────────
+
+  openGame(): void {
+    if (this.dead || !this.gamePanel) return
+    if (this.chatOpen) this.closeChat() // 面板都挂在宠物上方，一次只开一个
+    if (!this.gameOpen) {
+      this.gameOpen = true
+      this.clearTimers()
+      this.bubble.hide()
+      void this.player.play('play-gomoku', true)
+    }
+    this.gamePanel.open()
+  }
+
+  closeGame(): void {
+    if (!this.gameOpen) return
+    this.gameOpen = false
+    this.gamePanel?.close()
+    if (!this.dead && !this.reduced) {
+      this.state = 'idle'
+      // 立刻切回待机，别让对局循环多播一小段
+      void this.player.play('idle-breathing', true)
+      this.scheduleIdle(rand(300, 900))
+    }
+  }
+
+  /** 终局反应：访客赢 → 气急败坏；鱼赢 → 开心跃动；平局 → 哼歌。完事回到对局循环 */
+  private onGameEnd(result: GameResult): void {
+    this.lastActivity = Date.now()
+    addAffinity(result === 'player' ? 5 : 3) // 赢它请客，加得多点
+    const react: AnimName = result === 'player' ? 'game-rage' : result === 'pet' ? 'click-happy' : 'idle-humming'
+    const line =
+      result === 'player'
+        ? '可恶！这局不算，再来！'
+        : result === 'pet'
+          ? '嘿嘿，承让承让～'
+          : '平局也挺好，棋逢对手。'
+    this.bubble.say(line, 6000)
+    this.speech.speak(line)
+    void this.player.playOnce(react).then(() => {
+      if (!this.dead && this.gameOpen) void this.player.play('play-gomoku', true)
+    })
+  }
+
   // ── 可见性 ────────────────────────────────────────────────────
 
   private suspend(): void {
@@ -826,6 +884,10 @@ export class Pet {
     if (this.dead || this.reduced) return
     if (this.chatOpen) {
       void this.player.play('talk-screen', true)
+      return
+    }
+    if (this.gameOpen) {
+      void this.player.play('play-gomoku', true)
       return
     }
     if (this.state === 'sleep') {
@@ -881,6 +943,7 @@ export class Pet {
     this.chatAbort?.abort()
     this.chatAbort = null
     this.menu?.destroy()
+    this.gamePanel?.destroy()
     this.speech.cancel()
     this.detachDrag?.()
     document.removeEventListener('pointerdown', this.onActivity, { capture: true } as EventListenerOptions)

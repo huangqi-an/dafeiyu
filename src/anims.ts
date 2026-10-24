@@ -21,7 +21,9 @@ export const ANIMS = [
   'pet-scratch',
   'eat-rice',
   'eat-caught',
-  'eat-icecream'
+  'eat-icecream',
+  'play-gomoku',
+  'game-rage'
 ] as const
 
 export type AnimName = (typeof ANIMS)[number]
@@ -39,7 +41,8 @@ export const LOOPING: ReadonlySet<AnimName> = new Set([
   'idle-breathing',
   'sleep-snooze',
   'talk-screen',
-  'talk-thinking'
+  'talk-thinking',
+  'play-gomoku'
 ])
 
 /** 待机池 */

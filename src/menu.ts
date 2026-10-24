@@ -5,6 +5,7 @@ export interface MenuHandlers {
   onToggleSleep(): void
   onResetPos(): void
   onChat(): void
+  onGame(): void
   onToggleVoice(): void
   onCycleVoice(): void
 }
@@ -83,6 +84,7 @@ export class PetMenu {
     item('🍚 喂食', handlers.onFeed)
     this.sleepBtn = item('😴 睡觉', handlers.onToggleSleep)
     this.chatBtn = item('💬 聊天', handlers.onChat)
+    item('♟ 五子棋', handlers.onGame)
     this.voiceBtn = item('🔊 语音：开', handlers.onToggleVoice)
     this.voiceCycleBtn = item('🎤 音色', handlers.onCycleVoice)
     item('🎯 回原位', handlers.onResetPos)

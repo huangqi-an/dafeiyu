@@ -17,6 +17,9 @@ export interface DafeiyuInstance {
   /** 打开聊天面板（需配置 endpoints.chat，否则 no-op） */
   openChat(): void
   closeChat(): void
+  /** 打开五子棋（本地小游戏，无需后端） */
+  openGame(): void
+  closeGame(): void
 }
 
 /**
@@ -51,7 +54,9 @@ export function mount(options: DafeiyuOptions = {}): DafeiyuInstance {
     feed: () => ensure().feed(),
     setVoice: (on: boolean) => ensure().setVoice(on),
     openChat: () => ensure().openChat(),
-    closeChat: () => ensure().closeChat()
+    closeChat: () => ensure().closeChat(),
+    openGame: () => ensure().openGame(),
+    closeGame: () => ensure().closeGame()
   }
 }
 

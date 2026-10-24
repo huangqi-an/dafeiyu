@@ -15,7 +15,8 @@ node e2e/mock-server.mjs &      # mock 后端（:4323，聊天/碎碎念用）
 node e2e/interaction-test.mjs   # 互动：菜单/喂食/摸头/好感度/睡眠/回原位
 node e2e/chat-test.mjs          # 聊天：面板/流式/错误/历史（依赖 mock）
 node e2e/meme-test.mjs          # 表情包：配图展示/缺失降级（依赖 mock）
-node e2e/speech-test.mjs        # 语音：朗读触发/开关/持久化（依赖 mock）
+node e2e/speech-test.mjs        # 语音：朗读触发/开关/持久化/音色项（依赖 mock）
+node e2e/game-test.mjs          # 五子棋：面板/落子应对/重开/关闭（纯本地）
 node e2e/real-server-test.mjs   # 可选：对接真 dafeiyu-server（:8787 需自配 key）
 ```
 
