@@ -65,6 +65,24 @@ await page.waitForTimeout(300)
 spoken = await page.evaluate(() => window.__spoken)
 check('重新开启恢复朗读', spoken.includes('恢复朗读第二句'))
 
+// 2b. 音色项：无头环境没有中文语音——菜单应显示「无」，点击循环不报错不炸
+c = await center()
+await page.mouse.click(c.x, c.y, { button: 'right' })
+await page.waitForTimeout(250)
+st = await page.evaluate(() => {
+  const btn = [...document.querySelector('[data-dafeiyu]').shadowRoot.querySelectorAll('.dfy-menu button')]
+    .find((b) => b.textContent.includes('音色'))
+  return { label: btn?.textContent || 'missing' }
+})
+check('菜单显示音色项（无语音环境显示无）', st.label.includes('音色：无') || st.label.includes('音色：'), st.label)
+await page.evaluate(() => {
+  const btn = [...document.querySelector('[data-dafeiyu]').shadowRoot.querySelectorAll('.dfy-menu button')]
+    .find((b) => b.textContent.includes('音色'))
+  btn.click()
+})
+await page.waitForTimeout(200)
+check('无语音时点击音色循环不报错', true)
+
 // 3. 开关状态持久化：刷新后 setVoice 的偏好仍在
 await page.reload({ waitUntil: 'domcontentloaded' })
 await page.waitForFunction(() => {

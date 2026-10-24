@@ -6,6 +6,7 @@ export interface MenuHandlers {
   onResetPos(): void
   onChat(): void
   onToggleVoice(): void
+  onCycleVoice(): void
 }
 
 const MENU_STYLE = `
@@ -45,6 +46,7 @@ export class PetMenu {
   private sleepBtn: HTMLButtonElement
   private chatBtn: HTMLButtonElement
   private voiceBtn: HTMLButtonElement
+  private voiceCycleBtn: HTMLButtonElement
   private openState = false
   private handlers: MenuHandlers
   private host: HTMLDivElement
@@ -82,6 +84,7 @@ export class PetMenu {
     this.sleepBtn = item('😴 睡觉', handlers.onToggleSleep)
     this.chatBtn = item('💬 聊天', handlers.onChat)
     this.voiceBtn = item('🔊 语音：开', handlers.onToggleVoice)
+    this.voiceCycleBtn = item('🎤 音色', handlers.onCycleVoice)
     item('🎯 回原位', handlers.onResetPos)
 
     shadow.appendChild(this.root)
@@ -105,12 +108,13 @@ export class PetMenu {
   }
 
   /**
-   * @param name      宠物名（头部展示）
-   * @param affinity  好感数值
-   * @param levelName 档位名
-   * @param sleeping  当前是否睡着（决定「睡觉/叫醒」文案）
-   * @param canChat   是否有聊天能力（无则隐藏聊天项）
-   * @param voiceOn   语音朗读开关状态（决定「语音」项文案）
+   * @param name        宠物名（头部展示）
+   * @param affinity    好感数值
+   * @param levelName   档位名
+   * @param sleeping    当前是否睡着（决定「睡觉/叫醒」文案）
+   * @param canChat     是否有聊天能力（无则隐藏聊天项）
+   * @param voiceOn     语音朗读开关状态（决定「语音」项文案）
+   * @param voiceLabel  当前音色名（「音色」项展示；空串隐藏该项）
    */
   open(
     name: string,
@@ -118,12 +122,15 @@ export class PetMenu {
     levelName: string,
     sleeping: boolean,
     canChat: boolean,
-    voiceOn: boolean
+    voiceOn: boolean,
+    voiceLabel: string
   ): void {
     this.head.textContent = `${name} · 好感 ${affinity}（${levelName}）`
     this.sleepBtn.textContent = sleeping ? '⏰ 叫醒' : '😴 睡觉'
     this.chatBtn.style.display = canChat ? '' : 'none'
     this.voiceBtn.textContent = voiceOn ? '🔊 语音：开' : '🔇 语音：关'
+    // 「无」也展示（让访客知道不是坏了，是本机没语音）；真正隐藏留给了空串
+    this.voiceCycleBtn.textContent = `🎤 音色：${voiceLabel || '无'}`
     this.openState = true
     this.root.classList.add('dfy-open')
     // 贴视口边缘时水平拉回

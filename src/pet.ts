@@ -150,7 +150,8 @@ export class Pet {
       onToggleSleep: () => this.toggleSleep(),
       onResetPos: () => this.resetPos(),
       onChat: () => (this.chatOpen ? this.closeChat() : this.openChat()),
-      onToggleVoice: () => this.setVoice(!this.speech.enabled)
+      onToggleVoice: () => this.setVoice(!this.speech.enabled),
+      onCycleVoice: () => this.cycleVoice()
     })
     this.video.addEventListener('contextmenu', (e) => {
       e.preventDefault()
@@ -719,13 +720,20 @@ export class Pet {
       levelOf(n).name,
       this.state === 'sleep',
       !!this.endpoints?.chat,
-      this.speech.enabled
+      this.speech.enabled,
+      this.speech.voiceLabel()
     )
   }
 
   /** 语音朗读开关（右键菜单入口）；关闭时立刻停掉正在读的 */
   setVoice(on: boolean): void {
     this.speech.setEnabled(on)
+  }
+
+  /** 切换到下一个本机中文音色并试听一句；无语音可切时静默 */
+  cycleVoice(): void {
+    const v = this.speech.cycleVoice()
+    if (v) this.speech.speak('就这个声音啦～')
   }
 
   private get petName(): string {

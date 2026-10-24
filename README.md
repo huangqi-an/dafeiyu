@@ -37,7 +37,7 @@ mount({ assetBase: 'https://your-host/pet-assets/' })
 | `lines` | `string[]` | `[]` | 追加台词（内置池之外） |
 | `whisperIntervalSec` | `number` | `120` | 自动说话间隔（秒，±30% 抖动） |
 | `enabledOnMobile` | `boolean` | `false` | 视口 <768px 时是否显示 |
-| `voice` | `boolean` | `false` | 语音朗读（浏览器 TTS）：碎碎念与聊天回复开口读出来；访客可在右键菜单切换（偏好持久化） |
+| `voice` | `boolean` | `false` | 语音朗读（浏览器 TTS）：碎碎念与聊天回复开口读出来；访客可在右键菜单切换（偏好持久化）、循环切换本机中文音色并试听 |
 | `name` | `string` | `'大肥鱼'` | 宠物显示名（右键菜单头部、聊天面板标题） |
 | `pageContext` | `boolean` | `true` | whisper 是否附带当前页面标题/路径（后端可据此说应景台词） |
 | `endpoints` | `{whisper?,chat?}` | 空 | AI 后端地址；配了才有碎碎念拉取与双击聊天，推荐搭配 [dafeiyu-server](https://github.com/huangqi-an/dafeiyu-server) 自建 |
