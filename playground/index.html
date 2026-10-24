@@ -69,17 +69,22 @@
       sel.appendChild(o)
     })
 
-    var mock = new URLSearchParams(location.search).has('mock')
+    var params = new URLSearchParams(location.search)
+    var mock = params.has('mock')
+    // ?server=http://host:port → 直接对接一个 dafeiyu-server 部署（真 AI）
+    var server = params.get('server')
     var endpoints = mock
       ? { whisper: 'http://localhost:4323/whisper', chat: 'http://localhost:4323/chat' }
-      : undefined
+      : server
+        ? { whisper: server.replace(/\/$/, '') + '/whisper', chat: server.replace(/\/$/, '') + '/chat' }
+        : undefined
     var inst = null
     function ensure() {
       if (!inst) {
         inst = Dafeiyu.mount({
           assetBase: '/assets/',
           size: 240,
-          whisperIntervalSec: mock ? 6 : 45,
+          whisperIntervalSec: mock ? 6 : 20,
           endpoints: endpoints
         })
         window.__dfy = inst
