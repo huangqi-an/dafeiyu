@@ -8,6 +8,7 @@ import type { ChatMessage } from './chat'
 import { PetMenu } from './menu'
 import { attachDrag, startFlight } from './physics'
 import { Player } from './player'
+import { Speech } from './speech'
 
 const MOBILE_QUERY = '(max-width: 767px)'
 const POS_KEY = 'dafeiyu:pos'
@@ -45,7 +46,7 @@ export class Pet {
   /** 单例：重复 mount 时先销毁上一个 */
   static current: Pet | undefined
 
-  private opts: Required<Pick<DafeiyuOptions, 'assetBase' | 'size' | 'zIndex' | 'whisperIntervalSec' | 'enabledOnMobile' | 'pageContext'>> &
+  private opts: Required<Pick<DafeiyuOptions, 'assetBase' | 'size' | 'zIndex' | 'whisperIntervalSec' | 'enabledOnMobile' | 'pageContext' | 'voice'>> &
     DafeiyuOptions
   private extraLines: string[]
   private endpoints: PetEndpoints | undefined
@@ -55,6 +56,7 @@ export class Pet {
   private video!: HTMLVideoElement
   private player!: Player
   private bubble!: Bubble
+  private speech!: Speech
 
   private x = 0
   private y = 0
@@ -117,6 +119,7 @@ export class Pet {
 
     this.player = new Player(this.video, this.opts.assetBase)
     this.bubble = new Bubble(this.shadow)
+    this.speech = new Speech(this.opts.voice)
     this.detachDrag = attachDrag(this.video, {
       onGrab: (px, py) => {
         this.grabOffX = px - this.x
@@ -146,7 +149,8 @@ export class Pet {
       onFeed: () => this.feed(),
       onToggleSleep: () => this.toggleSleep(),
       onResetPos: () => this.resetPos(),
-      onChat: () => (this.chatOpen ? this.closeChat() : this.openChat())
+      onChat: () => (this.chatOpen ? this.closeChat() : this.openChat()),
+      onToggleVoice: () => this.setVoice(!this.speech.enabled)
     })
     this.video.addEventListener('contextmenu', (e) => {
       e.preventDefault()
@@ -459,6 +463,7 @@ export class Pet {
     void this.player.play('talk-screen', true)
     const ny = (this.y + this.hPlaceholder() / 2) / window.innerHeight
     this.bubble.say(line, BUBBLE_MS, ny < 0.28, image)
+    this.speech.speak(line)
     this.setT(() => {
       if (this.state === 'talk') {
         this.state = 'idle'
@@ -670,6 +675,8 @@ export class Pet {
         this.saveHistory()
         panel.setSending(false)
         this.chatAbort = null
+        // 完整回复落定后再整段朗读（流式逐字念会卡顿）
+        this.speech.speak(acc)
       },
       onError: (msg) => {
         handle.error(msg)
@@ -706,7 +713,19 @@ export class Pet {
   private openMenu(): void {
     if (this.dead || !this.menu) return
     const n = loadAffinity()
-    this.menu.open(this.petName, n, levelOf(n).name, this.state === 'sleep', !!this.endpoints?.chat)
+    this.menu.open(
+      this.petName,
+      n,
+      levelOf(n).name,
+      this.state === 'sleep',
+      !!this.endpoints?.chat,
+      this.speech.enabled
+    )
+  }
+
+  /** 语音朗读开关（右键菜单入口）；关闭时立刻停掉正在读的 */
+  setVoice(on: boolean): void {
+    this.speech.setEnabled(on)
   }
 
   private get petName(): string {
@@ -826,6 +845,7 @@ export class Pet {
     void this.player.play('talk-screen', true)
     const ny = (this.y + this.hPlaceholder() / 2) / window.innerHeight
     this.bubble.say(line, BUBBLE_MS, ny < 0.28)
+    this.speech.speak(line)
     this.setT(() => {
       if (this.state === 'talk') {
         this.state = 'idle'
@@ -853,6 +873,7 @@ export class Pet {
     this.chatAbort?.abort()
     this.chatAbort = null
     this.menu?.destroy()
+    this.speech.cancel()
     this.detachDrag?.()
     document.removeEventListener('pointerdown', this.onActivity, { capture: true } as EventListenerOptions)
     document.removeEventListener('keydown', this.onActivity, { capture: true } as EventListenerOptions)

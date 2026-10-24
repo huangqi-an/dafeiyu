@@ -26,6 +26,8 @@ export interface DafeiyuOptions {
   enabledOnMobile?: boolean
   /** whisper 请求是否附带当前页面标题/路径（后端可据此说应景台词），默认开 */
   pageContext?: boolean
+  /** 语音朗读（浏览器 TTS）：碎碎念与聊天回复开口读出来，默认关；访客可在右键菜单切换 */
+  voice?: boolean
   /** AI 后端地址：配了才有碎碎念拉取和双击聊天面板，失败降级本地台词池 */
   endpoints?: PetEndpoints
 }
@@ -37,7 +39,8 @@ export const DEFAULTS = {
   zIndex: 9999,
   whisperIntervalSec: 120,
   enabledOnMobile: false,
-  pageContext: true
+  pageContext: true,
+  voice: false
 } as const
 
 /**

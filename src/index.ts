@@ -12,6 +12,8 @@ export interface DafeiyuInstance {
   play(name: string): void
   /** 喂食（好感 +2，随机播放吃相动画） */
   feed(): void
+  /** 语音朗读开关（右键菜单同款入口） */
+  setVoice(on: boolean): void
   /** 打开聊天面板（需配置 endpoints.chat，否则 no-op） */
   openChat(): void
   closeChat(): void
@@ -47,6 +49,7 @@ export function mount(options: DafeiyuOptions = {}): DafeiyuInstance {
     say: (text?: string) => ensure().forceSay(text),
     play: (name: string) => ensure().forcePlay(name),
     feed: () => ensure().feed(),
+    setVoice: (on: boolean) => ensure().setVoice(on),
     openChat: () => ensure().openChat(),
     closeChat: () => ensure().closeChat()
   }

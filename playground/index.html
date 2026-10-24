@@ -85,7 +85,8 @@
           assetBase: '/assets/',
           size: 240,
           whisperIntervalSec: mock ? 6 : 20,
-          endpoints: endpoints
+          endpoints: endpoints,
+          voice: params.has('voice')
         })
         window.__dfy = inst
       }

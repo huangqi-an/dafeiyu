@@ -5,6 +5,7 @@ export interface MenuHandlers {
   onToggleSleep(): void
   onResetPos(): void
   onChat(): void
+  onToggleVoice(): void
 }
 
 const MENU_STYLE = `
@@ -43,6 +44,7 @@ export class PetMenu {
   private head: HTMLDivElement
   private sleepBtn: HTMLButtonElement
   private chatBtn: HTMLButtonElement
+  private voiceBtn: HTMLButtonElement
   private openState = false
   private handlers: MenuHandlers
   private host: HTMLDivElement
@@ -79,6 +81,7 @@ export class PetMenu {
     item('🍚 喂食', handlers.onFeed)
     this.sleepBtn = item('😴 睡觉', handlers.onToggleSleep)
     this.chatBtn = item('💬 聊天', handlers.onChat)
+    this.voiceBtn = item('🔊 语音：开', handlers.onToggleVoice)
     item('🎯 回原位', handlers.onResetPos)
 
     shadow.appendChild(this.root)
@@ -107,11 +110,20 @@ export class PetMenu {
    * @param levelName 档位名
    * @param sleeping  当前是否睡着（决定「睡觉/叫醒」文案）
    * @param canChat   是否有聊天能力（无则隐藏聊天项）
+   * @param voiceOn   语音朗读开关状态（决定「语音」项文案）
    */
-  open(name: string, affinity: number, levelName: string, sleeping: boolean, canChat: boolean): void {
+  open(
+    name: string,
+    affinity: number,
+    levelName: string,
+    sleeping: boolean,
+    canChat: boolean,
+    voiceOn: boolean
+  ): void {
     this.head.textContent = `${name} · 好感 ${affinity}（${levelName}）`
     this.sleepBtn.textContent = sleeping ? '⏰ 叫醒' : '😴 睡觉'
     this.chatBtn.style.display = canChat ? '' : 'none'
+    this.voiceBtn.textContent = voiceOn ? '🔊 语音：开' : '🔇 语音：关'
     this.openState = true
     this.root.classList.add('dfy-open')
     // 贴视口边缘时水平拉回

@@ -37,6 +37,7 @@ mount({ assetBase: 'https://your-host/pet-assets/' })
 | `lines` | `string[]` | `[]` | 追加台词（内置池之外） |
 | `whisperIntervalSec` | `number` | `120` | 自动说话间隔（秒，±30% 抖动） |
 | `enabledOnMobile` | `boolean` | `false` | 视口 <768px 时是否显示 |
+| `voice` | `boolean` | `false` | 语音朗读（浏览器 TTS）：碎碎念与聊天回复开口读出来；访客可在右键菜单切换（偏好持久化） |
 | `name` | `string` | `'大肥鱼'` | 宠物显示名（右键菜单头部、聊天面板标题） |
 | `pageContext` | `boolean` | `true` | whisper 是否附带当前页面标题/路径（后端可据此说应景台词） |
 | `endpoints` | `{whisper?,chat?}` | 空 | AI 后端地址；配了才有碎碎念拉取与双击聊天，推荐搭配 [dafeiyu-server](https://github.com/huangqi-an/dafeiyu-server) 自建 |
@@ -53,6 +54,8 @@ mount({ assetBase: 'https://your-host/pet-assets/' })
   默认带上当前页面标题/路径，AI 能就着你正在看的内容说话；失败自动降级本地池）
 - **表情包配图**：碎碎念随机带一张图（台词自动配合画面），聊天由 AI 按语境选图；
   27 张表情包随包分发（`assets/memes/`），素材缺失自动隐藏不破坏体验
+- **语音朗读**（可选，浏览器自带 TTS，零成本零后端）：碎碎念与聊天回复开口读出来，
+  右键菜单可开关（偏好存 localStorage）；音质取决于访客系统，缺中文语音时静默降级
 - 双击宠物打开聊天面板（需配 `endpoints.chat`），SSE 流式回复，历史 5 轮存 localStorage
 
 ## 宠物种类包（换形象）
