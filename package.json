@@ -1,0 +1,50 @@
+{
+  "name": "dafeiyu",
+  "version": "0.1.0",
+  "description": "大肥鱼网页宠物 —— 一行代码给网站加一只会走会说话的透明视频桌宠（动画素材来自 dsh-pet，MIT）",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "unpkg": "./dist/dafeiyu.iife.js",
+  "jsdelivr": "./dist/dafeiyu.iife.js",
+  "files": [
+    "dist",
+    "assets",
+    "LICENSE",
+    "THIRD-PARTY-NOTICE.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "watch": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "serve": "python3 -m http.server 4322"
+  },
+  "keywords": [
+    "pet",
+    "web-pet",
+    "widget",
+    "mascot",
+    "overlay",
+    "dsh-pet"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/huangqi-an/dafeiyu.git"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3"
+  },
+  "allowScripts": {
+    "esbuild@0.27.7": true
+  }
+}

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:," />
+  <title>dafeiyu playground</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      margin: 0;
+      font: 15px/1.8 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      padding: 24px clamp(16px, 6vw, 64px) 120px;
+    }
+    h1 { font-size: 20px; }
+    h1 code { font-size: 16px; }
+    p { max-width: 68ch; }
+    .panel {
+      position: sticky; top: 12px; z-index: 10;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      padding: 10px 14px; border-radius: 10px;
+      background: rgba(127, 127, 127, 0.12);
+      backdrop-filter: blur(6px);
+    }
+    button, select {
+      font: inherit; padding: 4px 12px; border-radius: 8px;
+      border: 1px solid rgba(127,127,127,.4); cursor: pointer;
+      background: transparent; color: inherit;
+    }
+    button:hover { border-color: currentColor; }
+    .hint { color: rgba(127,127,127,.9); font-size: 13px; }
+    mark { padding: 0 4px; border-radius: 4px; background: rgba(255, 213, 0, .35); }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <strong>dafeiyu</strong>
+    <button id="mount">挂载</button>
+    <button id="destroy">销毁</button>
+    <button id="say">说一句</button>
+    <button id="chat">聊天</button>
+    <button id="rare">强制彩蛋</button>
+    <select id="anim"></select>
+    <button id="play">播放</button>
+    <button id="bg">切换底色</button>
+    <span class="hint">试试点它 / 快速连点 / 拎起来甩出去 / 晾 5 分钟看它睡着</span>
+  </div>
+
+  <h1><code>dafeiyu</code> playground</h1>
+  <p>本页通过 <code>&lt;script src="/dist/dafeiyu.iife.js"&gt;</code> 加载 IIFE 产物，素材走仓库根的 <code>/assets/</code>——与 CDN 用户的接入方式一致。先 <code>npm run build</code>，再 <code>npm run serve</code> 打开本页。</p>
+  <p>容器是 <mark>Shadow DOM</mark>，宿主页面样式进不去，宠物观感在任何站点一致。气泡、视频、拖拽物理都在里面。段落文字是给你拖着鱼遮挡/对照用的。文本可以随便滚，验证宠物 fixed 定位与页面滚动互不干扰。</p>
+  <p>透明视频在浅色与深色底上都应正常融合——用「切换底色」验证边缘没有黑底（Safari 黑底问题只在本机是 macOS WebKit 时出现，此时应自动改用 .mov 素材）。</p>
+  <p>耗一下时间看行为：待机会在呼吸/哼歌/张望/哈欠之间切换（深夜哈欠更多）；偶发横着走两步；约 2% 概率「蓝鲸现世」；5 分钟无操作睡着，点击惊醒；连点 5 次它会生气。</p>
+  <p style="opacity:.6">填充段落：网页宠物的意义在于陪伴感与一点惊喜。大肥鱼游过你的文章列表，偶尔冒个泡，提醒你喝水、休息、别和 bug 置气。</p>
+  <p style="opacity:.6">填充段落：dafeiyu 是零依赖的原生实现，挂载后只增加一个 fixed 容器与一个 video 元素；页面不可见时它会把动画与定时器全部挂起，不空耗电。</p>
+
+  <script src="/dist/dafeiyu.iife.js"></script>
+  <script>
+    var ANIMS = [
+      'idle-breathing', 'idle-humming', 'idle-looking', 'idle-yawn',
+      'sleep-snooze', 'wake-startled', 'click-happy', 'click-wave',
+      'click-annoyed', 'drag-startled', 'talk-screen', 'talk-thinking',
+      'walk-crab', 'rare-whale'
+    ]
+    var sel = document.getElementById('anim')
+    ANIMS.forEach(function (n) {
+      var o = document.createElement('option')
+      o.value = n; o.textContent = n
+      sel.appendChild(o)
+    })
+
+    var mock = new URLSearchParams(location.search).has('mock')
+    var endpoints = mock
+      ? { whisper: 'http://localhost:4323/whisper', chat: 'http://localhost:4323/chat' }
+      : undefined
+    var inst = null
+    function ensure() {
+      if (!inst) {
+        inst = Dafeiyu.mount({
+          assetBase: '/assets/',
+          size: 240,
+          whisperIntervalSec: mock ? 6 : 45,
+          endpoints: endpoints
+        })
+        window.__dfy = inst
+      }
+      return inst
+    }
+
+    document.getElementById('mount').onclick = function () { ensure() }
+    document.getElementById('destroy').onclick = function () {
+      if (inst) { inst.destroy(); inst = null }
+    }
+    document.getElementById('say').onclick = function () { ensure().say() }
+    document.getElementById('chat').onclick = function () {
+      if (!mock) { alert('先开 mock 后端并用 ?mock=1 打开本页'); return }
+      ensure().openChat()
+    }
+    document.getElementById('rare').onclick = function () { ensure().play('rare-whale') }
+    document.getElementById('play').onclick = function () { ensure().play(sel.value) }
+    document.getElementById('bg').onclick = function () {
+      var b = document.body
+      var dark = b.style.background === 'rgb(24, 26, 32)'
+      b.style.background = dark ? '' : 'rgb(24, 26, 32)'
+      b.style.color = dark ? '' : '#e6e6e6'
+    }
+
+    ensure()
+  </script>
+</body>
+</html>
