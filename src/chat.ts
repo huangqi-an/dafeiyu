@@ -13,6 +13,8 @@ export interface ChatMessage {
 
 export interface AssistantHandle {
   push(delta: string): void
+  /** 配图（表情包），显示在文字上方 */
+  setImage(url: string): void
   done(): void
   error(msg: string): void
 }
@@ -79,7 +81,10 @@ export class ChatPanel {
   private onSend: (text: string) => void
   private onClose: () => void
 
-  constructor(shadow: ShadowRoot, handlers: { onSend(text: string): void; onClose(): void }) {
+  constructor(
+    shadow: ShadowRoot,
+    handlers: { title?: string; onSend(text: string): void; onClose(): void }
+  ) {
     this.onSend = handlers.onSend
     this.onClose = handlers.onClose
 
@@ -93,7 +98,7 @@ export class ChatPanel {
 
     const head = document.createElement('div')
     head.className = 'dfy-chat-head'
-    head.textContent = '和大肥鱼聊聊'
+    head.textContent = handlers.title ? `和${handlers.title}聊聊` : '和大肥鱼聊聊'
     const close = document.createElement('button')
     close.className = 'dfy-chat-close'
     close.textContent = '×'
@@ -191,14 +196,27 @@ export class ChatPanel {
 
   startAssistant(): AssistantHandle {
     const el = this.appendMsg('dfy-msg-bot', '')
+    const textSpan = document.createElement('span')
+    el.appendChild(textSpan)
     const scroll = () => (this.list.scrollTop = this.list.scrollHeight)
     return {
       push: (delta) => {
-        el.textContent += delta
+        textSpan.textContent += delta
+        scroll()
+      },
+      setImage: (url) => {
+        el.querySelector('img')?.remove()
+        const img = document.createElement('img')
+        img.src = url
+        img.alt = ''
+        img.style.cssText =
+          'display:block;margin-bottom:4px;max-height:130px;max-width:100%;border-radius:8px'
+        img.onerror = () => img.remove()
+        el.insertBefore(img, textSpan)
         scroll()
       },
       done: () => {
-        if (!el.textContent) el.textContent = '…'
+        if (!textSpan.textContent) textSpan.textContent = '…'
         scroll()
       },
       error: (msg) => {
@@ -220,14 +238,16 @@ export class ChatPanel {
 }
 
 /**
- * 流式对话请求。约定见文件头。任何失败都以 onError 收场，
- * 调用方只需处理三个回调；返回 AbortController 供中断（关面板/销毁时用）。
+ * 流式对话请求。事件协议：{"d":增量} | {"i":表情包键名} | {"e":错误} | [DONE]。
+ * 任何失败都以 onError 收场，调用方只需处理回调；返回 AbortController 供中断。
+ * onImage 收到的是服务端给出的键名，URL 由调用方（知道 assetBase 的一方）解析。
  */
 export function streamChat(
   url: string,
   messages: ChatMessage[],
   handlers: {
     onDelta(text: string): void
+    onImage?(key: string): void
     onDone(): void
     onError(msg: string): void
   },
@@ -285,6 +305,7 @@ export function streamChat(
                 return
               }
               if (typeof evt.d === 'string') handlers.onDelta(evt.d)
+              if (typeof evt.i === 'string') handlers.onImage?.(evt.i)
             } catch {
               /* 忽略解析不了的行 */
             }

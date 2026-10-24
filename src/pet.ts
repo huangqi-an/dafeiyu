@@ -130,6 +130,7 @@ export class Pet {
     // 聊天是可选能力：配置了 endpoints.chat 才有面板和双击入口
     if (this.endpoints?.chat) {
       this.chatPanel = new ChatPanel(this.shadow, {
+        title: this.petName,
         onSend: (text) => this.sendChat(text),
         onClose: () => this.closeChat()
       })
@@ -439,11 +440,15 @@ export class Pet {
     if (this.dead || this.reduced || !this.started || document.hidden) return
     if (this.state !== 'idle') return // 睡着/拖拽/说话中都不打扰
     let line = this.pickLine()
+    let image: string | undefined
     if (this.endpoints?.whisper) {
       const remote = await this.fetchWhisper()
       // 等响应的几秒里状态可能变了（被拖走/开始聊天），晚到的台词直接丢弃
       if (this.dead || this.state !== 'idle') return
-      if (remote) line = remote
+      if (remote) {
+        line = remote.line
+        image = remote.image ? this.memeUrl(remote.image) : undefined
+      }
     }
     if (!line) return
     this.clearTimers()
@@ -451,7 +456,7 @@ export class Pet {
     this.bump()
     void this.player.play('talk-screen', true)
     const ny = (this.y + this.hPlaceholder() / 2) / window.innerHeight
-    this.bubble.say(line, BUBBLE_MS, ny < 0.28)
+    this.bubble.say(line, BUBBLE_MS, ny < 0.28, image)
     this.setT(() => {
       if (this.state === 'talk') {
         this.state = 'idle'
@@ -460,8 +465,8 @@ export class Pet {
     }, BUBBLE_MS)
   }
 
-  /** 拉一句后端碎碎念；任何失败都返回 null，由本地台词池兜底 */
-  private async fetchWhisper(): Promise<string | null> {
+  /** 拉一句后端碎碎念（可带配图键名）；任何失败都返回 null，由本地台词池兜底 */
+  private async fetchWhisper(): Promise<{ line: string; image?: string } | null> {
     const url = this.endpoints?.whisper
     if (!url) return null
     try {
@@ -479,7 +484,12 @@ export class Pet {
       const data = await res.json()
       if (typeof data?.line === 'string') {
         const t = data.line.trim()
-        if (t && t.length <= 120) return t
+        if (t && t.length <= 120) {
+          return {
+            line: t,
+            image: typeof data.image === 'string' ? data.image.slice(0, 40) : undefined
+          }
+        }
       }
       return null
     } catch {
@@ -648,6 +658,10 @@ export class Pet {
         acc += d
         handle.push(d)
       },
+      onImage: (key) => {
+        const u = this.memeUrl(key)
+        if (u) handle.setImage(u)
+      },
       onDone: () => {
         handle.done()
         this.chatHistory = trimHistory([...outgoing, { role: 'assistant', content: acc || '…' }])
@@ -690,7 +704,16 @@ export class Pet {
   private openMenu(): void {
     if (this.dead || !this.menu) return
     const n = loadAffinity()
-    this.menu.open(n, levelOf(n).name, this.state === 'sleep', !!this.endpoints?.chat)
+    this.menu.open(this.petName, n, levelOf(n).name, this.state === 'sleep', !!this.endpoints?.chat)
+  }
+
+  private get petName(): string {
+    return this.opts.name ?? '大肥鱼'
+  }
+
+  /** 表情包键名 → 素材 URL；键名只放行 ASCII，防注入奇怪路径 */
+  private memeUrl(key: string): string | undefined {
+    return /^[a-z0-9-]{1,40}$/.test(key) ? `${this.opts.assetBase}memes/${key}.png` : undefined
   }
 
   private cancelLongPress(): void {

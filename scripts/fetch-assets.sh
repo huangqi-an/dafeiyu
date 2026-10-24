@@ -14,7 +14,38 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-mkdir -p assets /tmp/dafeiyu-fetch
+mkdir -p assets/memes /tmp/dafeiyu-fetch
+
+# 表情包（PNG，键 = assets/memes/<键>.png；描述表在 dafeiyu-server 的 handler.js 里）
+MEMES=(
+  "rice-fish=吃白饭的大肥鱼"
+  "big-coming=大的要来啦"
+  "big-med=大的药来了"
+  "scold-him=要不直接骂他"
+  "dead=死掉了"
+  "deep-sleep=深度睡眠"
+  "slow-burn=大烧货"
+  "keep-them=先养着吧"
+  "full-belly=吃饱饱摸肚子"
+  "open-source=誓死践行开源精神"
+  "shock=电死你"
+  "cute=可爱"
+  "token-mom=token给妈妈保管"
+  "blind-multimodal=假如给我三天多模态"
+  "awesome-whale=厉害了我的鲸"
+  "oh-whale=哦鲸鲸"
+  "stress=压力一只大肥鱼"
+  "riemann=黎曼猜想没证明喵"
+  "flirt-only=除了调情没啥用"
+  "need-update=我不更新你们用什么"
+  "no-virus=哪来的电脑病毒"
+  "want-resource=鱼片有资源吗"
+  "master-what=大师这个区是什么意思"
+  "sassy=就骚了怎么滴吧"
+  "oops-butter=完蛋了把黄油删了"
+  "one-bowl=就一碗"
+  "ciallo=Ciallo"
+)
 
 # 语义名 = dsh-pet 里的中文原名
 MAP=(
@@ -133,12 +164,31 @@ print(f"  mov：{sum(1 for n in zh2ascii.values() if os.path.exists(f'assets/{n}
 PY
 }
 
+fetch_memes() {
+  echo "==> memes（表情包 PNG）"
+  local ok=0
+  for pair in "${MEMES[@]}"; do
+    local key="${pair%%=*}" zh="${pair#*=}"
+    local out="assets/memes/$key.png"
+    if [[ -s "$out" ]]; then ok=$((ok+1)); continue; fi
+    local url="https://api.github.com/repos/PC2005-cloud/dsh-pet/contents/dsh-pet/assets/memes/$(enc "$zh").png?ref=main"
+    if curl -sfL --connect-timeout 15 --max-time 120 \
+         -H "Accept: application/vnd.github.raw" -o "$out" "$url"; then
+      ok=$((ok+1))
+    else
+      rm -f "$out"; echo "  失败 $key"
+    fi
+  done
+  echo "  memes：$ok / ${#MEMES[@]}"
+}
+
 mode="${1:-all}"
 case "$mode" in
-  webm) fetch_webm ;;
-  mov)  fetch_mov ;;
-  all)  fetch_webm || true; fetch_mov ;;
-  *) echo "用法: $0 [webm|mov|all]" >&2; exit 1 ;;
+  webm)  fetch_webm ;;
+  mov)   fetch_mov ;;
+  memes) fetch_memes ;;
+  all)   fetch_webm || true; fetch_mov; fetch_memes ;;
+  *) echo "用法: $0 [webm|mov|memes|all]" >&2; exit 1 ;;
 esac
 
 echo

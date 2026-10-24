@@ -1,4 +1,4 @@
-// mock 后端：whisper + SSE chat（带消息计数回显、600ms 首字延迟），端口 4323
+// mock 后端：whisper + SSE chat（消息计数回显、600ms 首字延迟、表情包事件），端口 4323
 import http from 'node:http'
 const PORT = 4323
 const CORS = {
@@ -11,7 +11,11 @@ http.createServer((req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end() }
   if (url.pathname === '/whisper' && req.method === 'GET') {
     res.writeHead(200, { 'content-type': 'application/json', ...CORS })
-    return res.end(JSON.stringify({ line: `mock 碎碎念 №${Math.floor(Math.random() * 1000)}`, source: 'mock' }))
+    return res.end(JSON.stringify({
+      line: `mock 碎碎念 №${Math.floor(Math.random() * 1000)}`,
+      source: 'mock',
+      image: 'cute' // 表情包键名，客户端自己解析成 assetBase 下 memes/cute.png
+    }))
   }
   if (url.pathname === '/chat' && req.method === 'POST') {
     let body = ''
@@ -29,6 +33,8 @@ http.createServer((req, res) => {
       }
       const reply = `你说的是「${last}」。（收到 ${count} 条消息）我是 mock 大肥鱼，会流式地一个字一个字回答。`
       setTimeout(() => {
+        // 首个事件：选一张表情包（与真实后端的 [img:] 首标记行为等价）
+        res.write('data: {"i":"cute"}\n\n')
         let i = 0
         const timer = setInterval(() => {
           i += 2

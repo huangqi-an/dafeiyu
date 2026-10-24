@@ -45,9 +45,22 @@ export class Bubble {
     shadow.appendChild(this.el)
   }
 
-  /** 显示一句话；durationMs 后自动隐藏。宠物贴近视口顶部时翻到下方 */
-  say(text: string, durationMs = 10000, flipBelow = false): void {
+  /**
+   * 显示一句话；durationMs 后自动隐藏。宠物贴近视口顶部时翻到下方。
+   * imageUrl：可选表情包（显示在文字下方，加载失败自动隐藏——素材缺失不破坏体验）
+   */
+  say(text: string, durationMs = 10000, flipBelow = false, imageUrl?: string): void {
     this.el.textContent = text
+    this.el.querySelector('img')?.remove()
+    if (imageUrl) {
+      const img = document.createElement('img')
+      img.src = imageUrl
+      img.alt = ''
+      img.style.cssText =
+        'display:block;margin:6px auto 0;max-height:110px;max-width:100%;border-radius:8px'
+      img.onerror = () => img.remove()
+      this.el.appendChild(img)
+    }
     this.el.style.bottom = flipBelow ? 'auto' : 'calc(100% + 12px)'
     this.el.style.top = flipBelow ? 'calc(100% + 12px)' : 'auto'
     this.el.style.opacity = '1'

@@ -24,7 +24,8 @@ fi
 
 mkdir -p "$DEST/assets"
 cp dist/dafeiyu.iife.js "$DEST/"
-cp assets/* "$DEST/assets/"
+# assets/ 含 memes/ 子目录，用 cp -r 的目录形式整体同步
+cp -r assets/. "$DEST/assets/"
 
 echo "已同步到 $DEST："
 ls -lh "$DEST" | tail -n +2

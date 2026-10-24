@@ -20,6 +20,8 @@ export interface DafeiyuOptions {
   lines?: string[]
   /** 自动说话间隔（秒），实际 ±30% 抖动 */
   whisperIntervalSec?: number
+  /** 宠物显示名（菜单头部、聊天面板标题），默认「大肥鱼」 */
+  name?: string
   /** 视口 <768px 时是否显示，默认隐藏 */
   enabledOnMobile?: boolean
   /** whisper 请求是否附带当前页面标题/路径（后端可据此说应景台词），默认开 */

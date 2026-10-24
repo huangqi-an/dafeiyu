@@ -37,6 +37,7 @@ mount({ assetBase: 'https://your-host/pet-assets/' })
 | `lines` | `string[]` | `[]` | 追加台词（内置池之外） |
 | `whisperIntervalSec` | `number` | `120` | 自动说话间隔（秒，±30% 抖动） |
 | `enabledOnMobile` | `boolean` | `false` | 视口 <768px 时是否显示 |
+| `name` | `string` | `'大肥鱼'` | 宠物显示名（右键菜单头部、聊天面板标题） |
 | `pageContext` | `boolean` | `true` | whisper 是否附带当前页面标题/路径（后端可据此说应景台词） |
 | `endpoints` | `{whisper?,chat?}` | 空 | AI 后端地址；配了才有碎碎念拉取与双击聊天，推荐搭配 [dafeiyu-server](https://github.com/huangqi-an/dafeiyu-server) 自建 |
 
@@ -50,7 +51,24 @@ mount({ assetBase: 'https://your-host/pet-assets/' })
   30 熟悉（摸头会回应）/ 100 老朋友（彩蛋概率翻倍）/ 300 挚友（专属台词）
 - 定时冒泡说一句（内置约 24 句，可追加；配 `endpoints` 后由 [dafeiyu-server](https://github.com/huangqi-an/dafeiyu-server) 这类后端生成 AI 台词，
   默认带上当前页面标题/路径，AI 能就着你正在看的内容说话；失败自动降级本地池）
+- **表情包配图**：碎碎念随机带一张图（台词自动配合画面），聊天由 AI 按语境选图；
+  27 张表情包随包分发（`assets/memes/`），素材缺失自动隐藏不破坏体验
 - 双击宠物打开聊天面板（需配 `endpoints.chat`），SSE 流式回复，历史 5 轮存 localStorage
+
+## 宠物种类包（换形象）
+
+形象与代码解耦：**一套素材目录 = 一种宠物**。约定目录内有 18 个语义动画文件
+（`idle-breathing.webm/.mov`、`click-happy`、`eat-rice`、`rare-whale`…见 `src/anims.ts`）
+和可选的 `memes/` 表情包，换形象只需：
+
+```js
+Dafeiyu.mount({ assetBase: '/assets-black-cat/', name: '黑猫', endpoints: { ... } })
+```
+
+- Safari 用户需要同名 `.mov`（HEVC-alpha），没有也不影响其他浏览器
+- **素材不齐自动降级**：缺失的动画会被记入黑名单并从调度池剔除，角色少几个动作照常活；
+  唯 `idle-breathing` 缺失时宠物退出（它是存在的前提）
+- 语义名清单就是「种类包规范」，自制素材可参考 dsh-pet 的绿幕→透明管线
 - `prefers-reduced-motion` 时静止不自动播放动画；页面不可见时暂停一切
 - Safari（macOS WebKit）自动切换 HEVC-alpha 的 `.mov` 素材（需素材目录含同名 mov）
 

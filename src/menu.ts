@@ -102,13 +102,14 @@ export class PetMenu {
   }
 
   /**
-   * @param affinity  好感数值（头部展示）
+   * @param name      宠物名（头部展示）
+   * @param affinity  好感数值
    * @param levelName 档位名
    * @param sleeping  当前是否睡着（决定「睡觉/叫醒」文案）
    * @param canChat   是否有聊天能力（无则隐藏聊天项）
    */
-  open(affinity: number, levelName: string, sleeping: boolean, canChat: boolean): void {
-    this.head.textContent = `大肥鱼 · 好感 ${affinity}（${levelName}）`
+  open(name: string, affinity: number, levelName: string, sleeping: boolean, canChat: boolean): void {
+    this.head.textContent = `${name} · 好感 ${affinity}（${levelName}）`
     this.sleepBtn.textContent = sleeping ? '⏰ 叫醒' : '😴 睡觉'
     this.chatBtn.style.display = canChat ? '' : 'none'
     this.openState = true
